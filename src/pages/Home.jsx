@@ -48,7 +48,7 @@ const formatPhone = (num) => {
 };
 
 const AppleSupportLanding = () => {
-  const rawPhone = '18888240848'; // for tel: links
+  const rawPhone = '+1(888)824-0848'; // for tel: links
   const [phone, setPhone] = useState(rawPhone);
   const [displayPhone, setDisplayPhone] = useState(formatPhone(rawPhone)); // for UI
   const [displayText, setDisplayText] = useState('');
